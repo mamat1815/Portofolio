@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/Button';
 import ResumeSection from '@/components/sections/Resume'; // Import Komponen Baru
@@ -12,6 +13,8 @@ import { CV_DATA } from '@/data/cv'; // Import data untuk Hero
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clickCount, setClickCount] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -27,10 +30,19 @@ export default function Home() {
     fetchProjects();
   }, []);
 
+  const handleNameClick = () => {
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+
+    if (newCount === 3) {
+      router.push('/wrap');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-zinc-900 selection:text-white">
       <Navbar />
-      
+
       <main className="pt-32">
         {/* HERO SECTION */}
         <section className="px-6 max-w-5xl mx-auto mb-20">
@@ -39,15 +51,15 @@ export default function Home() {
             <span className="text-zinc-400">& Software Engineer.</span>
           </h1>
           <p className="text-xl text-zinc-600 mb-10 max-w-2xl leading-relaxed">
-            Halo, saya <span className="font-semibold text-zinc-900">{CV_DATA.about.name}</span>. 
+            Halo, saya <span className="font-semibold text-zinc-900">{CV_DATA.about.name}</span>.
             Seorang mahasiswa Informatika yang berfokus pada pengembangan software, IoT, dan AI dengan spesialisasi di Golang & React.
           </p>
           <div className="flex gap-4">
-            <Button onClick={() => document.getElementById('projects')?.scrollIntoView({behavior: 'smooth'})}>
+            <Button onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}>
               Lihat Projek
             </Button>
             {/* Tombol baru untuk scroll ke Resume */}
-            <Button variant="outline" onClick={() => document.getElementById('resume')?.scrollIntoView({behavior: 'smooth'})}>
+            <Button variant="outline" onClick={() => document.getElementById('resume')?.scrollIntoView({ behavior: 'smooth' })}>
               Lihat CV
             </Button>
           </div>
@@ -70,27 +82,27 @@ export default function Home() {
               {projects.map((project) => (
                 <div key={project.id} className="group cursor-pointer">
                   <div className="aspect-video bg-zinc-100 rounded-xl overflow-hidden mb-6 border border-zinc-200 relative">
-                     {project.image_url ? (
-                       <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                     ) : (
-                       <div className="flex items-center justify-center h-full text-zinc-300"><Code size={40} /></div>
-                     )}
+                    {project.image_url ? (
+                      <img src={project.image_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-zinc-300"><Code size={40} /></div>
+                    )}
                   </div>
-                  
+
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-xl font-bold group-hover:text-blue-600 transition-colors">
                       {project.title}
                     </h3>
                     <div className="flex gap-2">
                       {project.repo_url && (
-                        <a href={project.repo_url} target="_blank" className="text-zinc-400 hover:text-zinc-900"><Github size={18}/></a>
+                        <a href={project.repo_url} target="_blank" className="text-zinc-400 hover:text-zinc-900"><Github size={18} /></a>
                       )}
                       {project.demo_url && (
-                         <a href={project.demo_url} target="_blank" className="text-zinc-400 hover:text-zinc-900"><ExternalLink size={18}/></a>
+                        <a href={project.demo_url} target="_blank" className="text-zinc-400 hover:text-zinc-900"><ExternalLink size={18} /></a>
                       )}
                     </div>
                   </div>
-                  
+
                   <p className="text-zinc-500 mb-4 leading-relaxed text-sm line-clamp-2">
                     {project.description}
                   </p>
@@ -110,10 +122,16 @@ export default function Home() {
       </main>
 
       <footer className="py-10 border-t border-zinc-100 mt-20 text-center text-zinc-400 text-sm">
-        <p>© 2024 {CV_DATA.about.name}.</p>
+        <p>© 2024 <span
+          onClick={handleNameClick}
+          className="cursor-pointer hover:text-zinc-900 transition-colors select-none"
+          title={clickCount > 0 ? `${clickCount}/3` : ''}
+        >
+          afsar.dev
+        </span></p>
         <div className="flex justify-center gap-4 mt-4">
-            <a href={CV_DATA.about.contact.github} target="_blank" className="hover:text-zinc-900">GitHub</a>
-            <a href={CV_DATA.about.contact.linkedin} target="_blank" className="hover:text-zinc-900">LinkedIn</a>
+          <a href={CV_DATA.about.contact.github} target="_blank" className="hover:text-zinc-900">GitHub</a>
+          <a href={CV_DATA.about.contact.linkedin} target="_blank" className="hover:text-zinc-900">LinkedIn</a>
         </div>
       </footer>
     </div>
