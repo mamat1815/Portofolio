@@ -46,10 +46,10 @@ const App = () => {
         },
         genre: {
             id: 'genre',
-            title: "Apapun Yang Terjadi",
+            title: "Evaluasi",
             artist: "Hindia",
             lyric: "Apapun yang terjadi, ku kan selalu ada untukmu...",
-            url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"
+            url: "/music/evaluasi.mp3"
         },
         top5: {
             id: 'top5',
