@@ -19,7 +19,14 @@ const App = () => {
     const [activeSection, setActiveSection] = useState('intro');
     const [progress, setProgress] = useState(0);
     const [hasInteracted, setHasInteracted] = useState(false);
-    const audioRef = useRef(new Audio());
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Initialize Audio only on client-side
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            audioRef.current = new Audio();
+        }
+    }, []);
 
     // Database Lagu Hindia (Placeholder URLs)
     const songs: Record<string, Song> = {
@@ -116,6 +123,8 @@ const App = () => {
     // Audio Handler
     useEffect(() => {
         const audio = audioRef.current;
+        if (!audio) return; // Early return if audio not initialized
+
         const handleEnded = () => setIsPlaying(false);
         const handleTimeUpdate = () => {
             if (audio.duration) setProgress((audio.currentTime / audio.duration) * 100);
