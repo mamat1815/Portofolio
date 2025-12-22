@@ -154,8 +154,9 @@ export default function DokterBubungLanding() {
                 </div>
             </div>
 
-            {/* CSS Animations */}
-            <style jsx>{`
+            {/* Global CSS for animations */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes gradient {
                     0%, 100% { background-position: 0% 50%; }
                     50% { background-position: 100% 50%; }
@@ -164,7 +165,7 @@ export default function DokterBubungLanding() {
                     background-size: 200% 200%;
                     animation: gradient 3s ease infinite;
                 }
-            `}</style>
+            `}} />
         </div>
     );
 }
