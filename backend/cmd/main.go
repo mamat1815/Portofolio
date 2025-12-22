@@ -28,7 +28,9 @@ func main() {
 		log.Fatal("DATABASE_URL is not set. Check your .env file")
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		PrepareStmt: false, // Disable prepared statement caching to avoid PostgreSQL errors
+	})
 	if err != nil {
 		log.Fatal("DB Connection failed: ", err)
 	}
