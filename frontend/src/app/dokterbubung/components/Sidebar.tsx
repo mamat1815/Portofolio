@@ -11,23 +11,33 @@ export default function Sidebar() {
     const router = useRouter();
     const pathname = usePathname();
 
+    // Get base path based on role (NOT from current pathname!)
+    const getBasePath = (): string => {
+        switch (currentUser.role) {
+            case 'doctor': return '/dokterbubung/dokter';
+            case 'pharmacist': return '/dokterbubung/apoteker';
+            case 'admin': return '/dokterbubung/logistik';
+            default: return '/dokterbubung';
+        }
+    };
+
     const getMenus = (): MenuItem[] => {
         switch (currentUser.role) {
             case 'doctor':
                 return [
-                    { id: '/', label: 'Dashboard Dokter', icon: LayoutDashboard },
+                    { id: '', label: 'Dashboard Dokter', icon: LayoutDashboard },
                     { id: '/workstation', label: 'Workstation Poli', icon: Stethoscope },
                     { id: '/history', label: 'Riwayat Resep', icon: History },
                 ];
             case 'pharmacist':
                 return [
-                    { id: '/', label: 'Dashboard Farmasi', icon: LayoutDashboard },
+                    { id: '', label: 'Dashboard Farmasi', icon: LayoutDashboard },
                     { id: '/verification', label: 'Verifikasi & Racik', icon: ClipboardList },
                     { id: '/pickup', label: 'Penyerahan Obat', icon: CheckCircle },
                 ];
             case 'admin':
                 return [
-                    { id: '/', label: 'Dashboard Gudang', icon: LayoutDashboard },
+                    { id: '', label: 'Dashboard Gudang', icon: LayoutDashboard },
                     { id: '/inventory', label: 'Stok Obat', icon: Package },
                     { id: '/logs', label: 'Laporan Mutasi', icon: FileText },
                 ];
@@ -37,7 +47,7 @@ export default function Sidebar() {
     };
 
     const menus = getMenus();
-    const basePath = pathname?.split('/').slice(0, 3).join('/') || '';
+    const basePath = getBasePath();
 
     return (
         <aside className="w-64 bg-slate-900 text-slate-300 fixed left-0 top-16 bottom-0 overflow-y-auto border-r border-slate-800">
@@ -54,8 +64,8 @@ export default function Sidebar() {
                                 key={menu.id}
                                 onClick={() => router.push(fullPath)}
                                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${isActive
-                                        ? 'bg-indigo-600 text-white shadow-lg'
-                                        : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+                                    ? 'bg-indigo-600 text-white shadow-lg'
+                                    : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
                                     }`}
                             >
                                 <Icon size={18} />
