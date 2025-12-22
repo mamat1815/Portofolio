@@ -1,15 +1,38 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { LayoutDashboard, Stethoscope, History, ClipboardList, CheckCircle, Package, FileText, Settings } from 'lucide-react';
 import { useHospital } from './DataProvider';
 import { MenuItem } from '../types';
+import { UserRole } from '../types';
 
 export default function Sidebar() {
-    const { currentUser } = useHospital();
+    const { currentUser, switchUser } = useHospital();
     const router = useRouter();
     const pathname = usePathname();
+
+    // Detect role from URL and sync with context
+    useEffect(() => {
+        if (!pathname) return;
+
+        let roleFromUrl: UserRole | null = null;
+
+        if (pathname.includes('/dokterbubung/dokter')) {
+            roleFromUrl = 'doctor';
+        } else if (pathname.includes('/dokterbubung/apoteker')) {
+            roleFromUrl = 'pharmacist';
+        } else if (pathname.includes('/dokterbubung/logistik')) {
+            roleFromUrl = 'admin';
+        } else if (pathname.includes('/dokterbubung/antrean')) {
+            roleFromUrl = 'public';
+        }
+
+        // Sync context with URL if mismatch
+        if (roleFromUrl && currentUser.role !== roleFromUrl) {
+            switchUser(roleFromUrl);
+        }
+    }, [pathname, currentUser.role, switchUser]);
 
     // Get base path based on role (NOT from current pathname!)
     const getBasePath = (): string => {
