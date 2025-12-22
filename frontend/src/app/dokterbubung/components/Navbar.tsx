@@ -1,93 +1,141 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Bell, Settings, LogOut, ChevronDown, Activity } from 'lucide-react';
 import { useHospital } from './DataProvider';
-import { UserRole } from '../types';
+import { useRouter, usePathname } from 'next/navigation';
+import { User, Bell, Menu, LogOut, Home } from 'lucide-react';
 
 export default function Navbar() {
     const { currentUser, switchUser } = useHospital();
     const router = useRouter();
-    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const pathname = usePathname();
+    const [showProfile, setShowProfile] = useState(false);
 
-    const handleSwitchRole = (role: UserRole) => {
+    const roleNames = {
+        doctor: 'Dokter',
+        pharmacist: 'Apoteker',
+        admin: 'Logistik',
+        public: 'Layar Antrean'
+    };
+
+    const handleRoleSwitch = (role: 'doctor' | 'pharmacist' | 'admin' | 'public') => {
         switchUser(role);
-        setIsProfileOpen(false);
-
-        const paths: Record<UserRole, string> = {
+        const routes = {
             doctor: '/dokterbubung/dokter',
             pharmacist: '/dokterbubung/apoteker',
             admin: '/dokterbubung/logistik',
             public: '/dokterbubung/antrean'
         };
-
-        router.push(paths[role]);
+        router.push(routes[role]);
+        setShowProfile(false);
     };
 
     return (
-        <header className="h-16 bg-white border-b border-slate-200 flex justify-between items-center px-6 fixed top-0 w-full z-50">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-600 rounded-lg shadow-sm">
-                    <Activity size={20} className="text-white" />
-                </div>
-                <div>
-                    <h1 className="font-bold text-lg text-slate-800 tracking-tight leading-none">MediSync Pro</h1>
-                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Hospital System</p>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-6">
-                <div className="relative cursor-pointer">
-                    <Bell size={20} className="text-slate-500 hover:text-slate-700" />
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+        <nav className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 shadow-2xl z-40 backdrop-blur-sm">
+            <div className="h-full px-6 flex items-center justify-between">
+                {/* Left: Brand */}
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-lg">
+                        <span className="text-2xl font-black text-white">RS</span>
+                    </div>
+                    <div>
+                        <h1 className="text-white font-bold text-lg tracking-tight">RS Islam Indonesia</h1>
+                        <p className="text-indigo-100 text-xs font-medium">Sistem Informasi Rumah Sakit</p>
+                    </div>
                 </div>
 
-                {/* Profile Dropdown */}
-                <div className="relative">
-                    <button
-                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className="flex items-center gap-3 hover:bg-slate-50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-slate-200"
-                    >
-                        <div className="text-right hidden md:block">
-                            <p className="text-sm font-bold text-slate-800">{currentUser.name}</p>
-                            <p className="text-xs text-slate-500 capitalize">{currentUser.role === 'pharmacist' ? 'Apoteker' : currentUser.role === 'admin' ? 'Logistik' : currentUser.role === 'doctor' ? 'Dokter' : 'Public'}</p>
-                        </div>
-                        <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold border border-slate-300">
-                            {currentUser.name.charAt(0)}
-                        </div>
-                        <ChevronDown size={16} className="text-slate-400" />
+                {/* Right: Actions */}
+                <div className="flex items-center gap-3">
+                    {/* Back to Menu */}
+                    {!pathname.includes('/dokterbubung/antrean') && pathname !== '/dokterbubung' && (
+                        <button
+                            onClick={() => router.push('/dokterbubung')}
+                            className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-lg transition-all flex items-center gap-2 font-medium shadow-lg"
+                        >
+                            <Home size={18} />
+                            Menu
+                        </button>
+                    )}
+
+                    {/* Notification Bell */}
+                    <button className="relative p-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-lg">
+                        <Bell size={20} className="text-white" />
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold shadow-lg animate-pulse">
+                            3
+                        </span>
                     </button>
 
-                    {isProfileOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden">
-                            <div className="p-3 bg-slate-50 border-b border-slate-100">
-                                <p className="text-xs font-bold text-slate-400 uppercase">Ganti Peran</p>
+                    {/* Profile Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowProfile(!showProfile)}
+                            className="flex items-center gap-3 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg transition-all shadow-lg"
+                        >
+                            <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                                <User size={18} className="text-white" />
                             </div>
-                            <div className="p-2">
-                                <button onClick={() => handleSwitchRole('doctor')} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-blue-50 hover:text-blue-700 rounded-md">
-                                    Dokter (Poliklinik)
-                                </button>
-                                <button onClick={() => handleSwitchRole('pharmacist')} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-green-50 hover:text-green-700 rounded-md">
-                                    Apoteker (Farmasi)
-                                </button>
-                                <button onClick={() => handleSwitchRole('admin')} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-orange-50 hover:text-orange-700 rounded-md">
-                                    Logistik (Gudang)
-                                </button>
-                                <div className="h-px bg-slate-100 my-1"></div>
-                                <button onClick={() => handleSwitchRole('public')} className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 rounded-md">
-                                    Layar Antrean (Publik)
-                                </button>
+                            <div className="text-left">
+                                <p className="text-white font-bold text-sm">{currentUser.name}</p>
+                                <p className="text-indigo-100 text-xs">{roleNames[currentUser.role]}</p>
                             </div>
-                            <div className="p-2 bg-red-50 border-t border-red-100">
-                                <button onClick={() => router.push('/dokterbubung')} className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 flex items-center gap-2">
-                                    <LogOut size={14} /> Kembali ke Menu Utama
-                                </button>
+                        </button>
+
+                        {showProfile && (
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden">
+                                {/* Profile Header */}
+                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-4 text-white">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
+                                            <User size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold">{currentUser.name}</p>
+                                            <p className="text-xs text-indigo-100">{roleNames[currentUser.role]}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Role Switcher */}
+                                <div className="p-3">
+                                    <p className="text-xs font-bold text-slate-500 mb-2 px-2">GANTI ROLE</p>
+                                    {currentUser.role !== 'doctor' && (
+                                        <button
+                                            onClick={() => handleRoleSwitch('doctor')}
+                                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+                                        >
+                                            🩺 Dokter
+                                        </button>
+                                    )}
+                                    {currentUser.role !== 'pharmacist' && (
+                                        <button
+                                            onClick={() => handleRoleSwitch('pharmacist')}
+                                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+                                        >
+                                            💊 Apoteker
+                                        </button>
+                                    )}
+                                    {currentUser.role !== 'admin' && (
+                                        <button
+                                            onClick={() => handleRoleSwitch('admin')}
+                                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+                                        >
+                                            📦 Logistik
+                                        </button>
+                                    )}
+                                    {currentUser.role !== 'public' && (
+                                        <button
+                                            onClick={() => handleRoleSwitch('public')}
+                                            className="w-full text-left px-3 py-2 hover:bg-indigo-50 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+                                        >
+                                            📺 Layar Antrean
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
-        </header>
+        </nav>
     );
 }
