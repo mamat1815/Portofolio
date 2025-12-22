@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 	// IMPORT PATH HARUS SESUAI DENGAN go.mod
 	"backend/internal/handler"
 	"backend/internal/models"
@@ -34,6 +35,15 @@ func main() {
 	if err != nil {
 		log.Fatal("DB Connection failed: ", err)
 	}
+
+	// Configure connection pool to prevent statement caching issues
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal("Failed to get database instance: ", err)
+	}
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 5 minutes
 
 	log.Println("Migrating database...")
 	// Pastikan struct Admin dan Project ada di models
