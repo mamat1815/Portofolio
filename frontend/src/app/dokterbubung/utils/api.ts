@@ -1,18 +1,18 @@
 // API Client for DokterBubung Backend
 import { Medicine, Prescription, Patient, Log } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api/hospital';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/hospital';
 
 export const api = {
     // Medicines
     getMedicines: async (): Promise<Medicine[]> => {
-        const res = await fetch(`${API_BASE_URL}/medicines`);
+        const res = await fetch(`${API_BASE_URL}/hospital/medicines`);
         if (!res.ok) throw new Error('Failed to fetch medicines');
         return res.json();
     },
 
     createMedicine: async (medicine: Medicine): Promise<Medicine> => {
-        const res = await fetch(`${API_BASE_URL}/medicines`, {
+        const res = await fetch(`${API_BASE_URL}/hospital/medicines`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(medicine)
@@ -22,7 +22,7 @@ export const api = {
     },
 
     restockMedicine: async (id: string, amount: number): Promise<void> => {
-        const res = await fetch(`${API_BASE_URL}/medicines/${id}/restock`, {
+        const res = await fetch(`${API_BASE_URL}/hospital/medicines/${id}/restock`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ amount })
@@ -32,7 +32,7 @@ export const api = {
 
     // Prescriptions
     getPrescriptions: async (): Promise<Prescription[]> => {
-        const res = await fetch(`${API_BASE_URL}/prescriptions`);
+        const res = await fetch(`${API_BASE_URL}/hospital/prescriptions`);
         if (!res.ok) throw new Error('Failed to fetch prescriptions');
         return res.json();
     },
@@ -50,7 +50,7 @@ export const api = {
             signa: string;
         }>;
     }): Promise<Prescription> => {
-        const res = await fetch(`${API_BASE_URL}/prescriptions`, {
+        const res = await fetch(`${API_BASE_URL}/hospital/prescriptions`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -60,7 +60,7 @@ export const api = {
     },
 
     updatePrescriptionStatus: async (id: string, action: 'process' | 'finish'): Promise<void> => {
-        const res = await fetch(`${API_BASE_URL}/prescriptions/${id}/status?action=${action}`, {
+        const res = await fetch(`${API_BASE_URL}/hospital/prescriptions/${id}/status?action=${action}`, {
             method: 'PUT'
         });
         if (!res.ok) throw new Error('Failed to update prescription status');
@@ -68,7 +68,7 @@ export const api = {
 
     // Patients
     getPatients: async (): Promise<Patient[]> => {
-        const res = await fetch(`${API_BASE_URL}/patients`);
+        const res = await fetch(`${API_BASE_URL}/hospital/patients`);
         if (!res.ok) throw new Error('Failed to fetch patients');
         return res.json();
     },
@@ -78,7 +78,7 @@ export const api = {
         dob: string;
         allergies: string;
     }): Promise<Patient> => {
-        const res = await fetch(`${API_BASE_URL}/patients`, {
+        const res = await fetch(`${API_BASE_URL}/hospital/patients`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -88,7 +88,7 @@ export const api = {
     },
 
     removePatient: async (id: string): Promise<void> => {
-        const res = await fetch(`${API_BASE_URL}/patients/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/hospital/patients/${id}`, {
             method: 'DELETE'
         });
         if (!res.ok) throw new Error('Failed to remove patient');
@@ -96,7 +96,7 @@ export const api = {
 
     // Logs
     getLogs: async (): Promise<Log[]> => {
-        const res = await fetch(`${API_BASE_URL}/logs`);
+        const res = await fetch(`${API_BASE_URL}/hospital/logs`);
         if (!res.ok) throw new Error('Failed to fetch logs');
         return res.json();
     }
