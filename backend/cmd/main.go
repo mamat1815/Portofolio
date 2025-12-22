@@ -35,14 +35,33 @@ func main() {
 
 	log.Println("Migrating database...")
 	// Pastikan struct Admin dan Project ada di models
-	db.AutoMigrate(&models.Project{}, &models.Admin{})
+	db.AutoMigrate(
+		&models.Project{}, 
+		&models.Admin{},
+		// DokterBubung Models
+		&models.Medicine{},
+		&models.Prescription{},
+		&models.PrescriptionItem{},
+		&models.Patient{},
+		&models.Log{},
+	)
 	log.Println("Database migrated successfully!")
+
+	// Seed initial data for hospital
+	SeedHospitalData(db)
 
 	// 2. WIRING DEPENDENCY INJECTION
 	// Pastikan urutan: Repo -> Service -> Handler
+	
+	// Portfolio
 	projectRepo := repository.NewProjectRepo(db)
 	projectService := services.NewProjectService(projectRepo)
 	projectHandler := handlers.NewProjectHandler(projectService)
+
+	// DokterBubung Hospital
+	hospitalRepo := repository.NewHospitalRepo(db)
+	hospitalService := services.NewHospitalService(hospitalRepo)
+	hospitalHandler := handlers.NewHospitalHandler(hospitalService)
 
 	// 3. Setup Fiber
 	app := fiber.New()
@@ -78,6 +97,27 @@ func main() {
 	// Routes yang butuh login
 	admin.Post("/projects", projectHandler.Create)
 	admin.Delete("/projects/:id", projectHandler.Delete)
+
+	// DOKTERBUBUNG HOSPITAL ROUTES
+	hospital := api.Group("/hospital")
+	
+	// Medicine routes
+	hospital.Get("/medicines", hospitalHandler.GetAllMedicines)
+	hospital.Post("/medicines", hospitalHandler.CreateMedicine)
+	hospital.Put("/medicines/:id/restock", hospitalHandler.RestockMedicine)
+	
+	// Prescription routes
+	hospital.Get("/prescriptions", hospitalHandler.GetAllPrescriptions)
+	hospital.Post("/prescriptions", hospitalHandler.CreatePrescription)
+	hospital.Put("/prescriptions/:id/status", hospitalHandler.UpdatePrescriptionStatus)
+	
+	// Patient routes
+	hospital.Get("/patients", hospitalHandler.GetAllPatients)
+	hospital.Post("/patients", hospitalHandler.AddPatient)
+	hospital.Delete("/patients/:id", hospitalHandler.RemovePatient)
+	
+	// Log routes
+	hospital.Get("/logs", hospitalHandler.GetAllLogs)
 
 	// 5. Start Server
 	port := os.Getenv("PORT")
