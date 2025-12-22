@@ -4,11 +4,12 @@ import (
 	"log"
 	"os"
 	"time"
+
 	// IMPORT PATH HARUS SESUAI DENGAN go.mod
-	"backend/internal/handler"
+	handlers "backend/internal/handler"
 	"backend/internal/models"
 	"backend/internal/repository"
-	"backend/internal/service"
+	services "backend/internal/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -29,6 +30,10 @@ func main() {
 		log.Fatal("DATABASE_URL is not set. Check your .env file")
 	}
 
+	// Add parameters to DSN to completely disable statement caching
+	// This fixes "prepared statement does not exist" errors in PostgreSQL
+	dsn += "?sslmode=require&prefer_simple_protocol=true"
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		PrepareStmt: false, // Disable prepared statement caching to avoid PostgreSQL errors
 	})
@@ -48,7 +53,7 @@ func main() {
 	log.Println("Migrating database...")
 	// Pastikan struct Admin dan Project ada di models
 	db.AutoMigrate(
-		&models.Project{}, 
+		&models.Project{},
 		&models.Admin{},
 		// DokterBubung Models
 		&models.Medicine{},
@@ -64,7 +69,7 @@ func main() {
 
 	// 2. WIRING DEPENDENCY INJECTION
 	// Pastikan urutan: Repo -> Service -> Handler
-	
+
 	// Portfolio
 	projectRepo := repository.NewProjectRepo(db)
 	projectService := services.NewProjectService(projectRepo)
@@ -112,22 +117,22 @@ func main() {
 
 	// DOKTERBUBUNG HOSPITAL ROUTES
 	hospital := api.Group("/hospital")
-	
+
 	// Medicine routes
 	hospital.Get("/medicines", hospitalHandler.GetAllMedicines)
 	hospital.Post("/medicines", hospitalHandler.CreateMedicine)
 	hospital.Put("/medicines/:id/restock", hospitalHandler.RestockMedicine)
-	
+
 	// Prescription routes
 	hospital.Get("/prescriptions", hospitalHandler.GetAllPrescriptions)
 	hospital.Post("/prescriptions", hospitalHandler.CreatePrescription)
 	hospital.Put("/prescriptions/:id/status", hospitalHandler.UpdatePrescriptionStatus)
-	
+
 	// Patient routes
 	hospital.Get("/patients", hospitalHandler.GetAllPatients)
 	hospital.Post("/patients", hospitalHandler.AddPatient)
 	hospital.Delete("/patients/:id", hospitalHandler.RemovePatient)
-	
+
 	// Log routes
 	hospital.Get("/logs", hospitalHandler.GetAllLogs)
 
