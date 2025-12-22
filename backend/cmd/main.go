@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	// IMPORT PATH HARUS SESUAI DENGAN go.mod
@@ -31,8 +32,12 @@ func main() {
 	}
 
 	// Add parameters to DSN to completely disable statement caching
-	// This fixes "prepared statement does not exist" errors in PostgreSQL
-	dsn += "?sslmode=require&prefer_simple_protocol=true"
+	// Check if DSN already has query parameters
+	if strings.Contains(dsn, "?") {
+		dsn += "&prefer_simple_protocol=true"
+	} else {
+		dsn += "?sslmode=require&prefer_simple_protocol=true"
+	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		PrepareStmt: false, // Disable prepared statement caching to avoid PostgreSQL errors
