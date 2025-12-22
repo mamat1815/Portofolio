@@ -72,16 +72,34 @@ func (r *hospitalRepo) RestockMedicine(id string, amount int) error {
 
 func (r *hospitalRepo) GetAllPrescriptions() ([]models.Prescription, error) {
 	var prescriptions []models.Prescription
-	err := r.db.Preload("Items").Find(&prescriptions).Error
-	return prescriptions, err
+	// Don't use Preload to avoid prepared statement caching issues in Railway PostgreSQL
+	err := r.db.Find(&prescriptions).Error
+	if err != nil {
+		return prescriptions, err
+	}
+
+	// Manually fetch items for each prescription
+	for i := range prescriptions {
+		var items []models.PrescriptionItem
+		r.db.Where("prescription_id = ?", prescriptions[i].ID).Find(&items)
+		prescriptions[i].Items = items
+	}
+
+	return prescriptions, nil
 }
 
 func (r *hospitalRepo) GetPrescriptionByID(id string) (*models.Prescription, error) {
 	var prescription models.Prescription
-	err := r.db.Preload("Items").First(&prescription, "id = ?", id).Error
+	err := r.db.First(&prescription, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
+
+	// Manually fetch items
+	var items []models.PrescriptionItem
+	r.db.Where("prescription_id = ?", id).Find(&items)
+	prescription.Items = items
+
 	return &prescription, nil
 }
 
