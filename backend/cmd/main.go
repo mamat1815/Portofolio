@@ -39,21 +39,23 @@ func main() {
 		dsn += "?sslmode=require&prefer_simple_protocol=true"
 	}
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		PrepareStmt: false, // Disable prepared statement caching to avoid PostgreSQL errors
-	})
-	if err != nil {
-		log.Fatal("DB Connection failed: ", err)
-	}
-
-	// Configure connection pool to prevent statement caching issues
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal("Failed to get database instance: ", err)
-	}
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 5 minutes
+	db, err := gorm.Open(postgres.New(postgres.Config{
+    DSN: dsn,
+    PreferSimpleProtocol: true,
+}), &gorm.Config{
+    PrepareStmt: false,
+    SkipDefaultTransaction: true,
+})
+if err != nil {
+    log.Fatal("DB Connection failed: ", err)
+}
+sqlDB, err := db.DB()
+if err != nil {
+    log.Fatal("Failed to get database instance: ", err)
+}
+sqlDB.SetMaxOpenConns(10)
+sqlDB.SetMaxIdleConns(2)
+sqlDB.SetConnMaxLifetime(5 * time.Minute)
 
 	log.Println("Migrating database...")
 	// Pastikan struct Admin dan Project ada di models
