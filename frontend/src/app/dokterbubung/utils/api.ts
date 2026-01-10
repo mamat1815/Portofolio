@@ -3,7 +3,7 @@ import { Medicine, Prescription, Patient, Log } from '../types';
 
 // API_BASE_URL already includes /hospital, so don't add it again!
 // API base url itu pasti pakai /hospital karena di settingan railway cuman sampai api
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/hospital';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const api = {
     // Medicines
