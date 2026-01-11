@@ -33,17 +33,32 @@ type HospitalRepository interface {
 }
 
 type hospitalRepo struct {
-	db                  *gorm.DB
+	db *gorm.DB
+
+	// Medicines cache
 	medicinesCache      []models.Medicine
 	medicinesCacheMutex sync.RWMutex
 	medicinesCacheTime  time.Time
-	cacheDuration       time.Duration
+
+	// Prescriptions cache
+	prescriptionsCache      []models.Prescription
+	prescriptionsCacheMutex sync.RWMutex
+	prescriptionsCacheTime  time.Time
+
+	// Patients cache
+	patientsCache      []models.Patient
+	patientsCacheMutex sync.RWMutex
+	patientsCacheTime  time.Time
+
+	// Logs cache
+	logsCache      []models.Log
+	logsCacheMutex sync.RWMutex
+	logsCacheTime  time.Time
 }
 
 func NewHospitalRepo(db *gorm.DB) HospitalRepository {
 	return &hospitalRepo{
-		db:            db,
-		cacheDuration: 5 * time.Minute, // Cache medicines untuk 5 menit
+		db: db,
 	}
 }
 
@@ -52,7 +67,7 @@ func NewHospitalRepo(db *gorm.DB) HospitalRepository {
 func (r *hospitalRepo) GetAllMedicines() ([]models.Medicine, error) {
 	// Check cache first
 	r.medicinesCacheMutex.RLock()
-	if len(r.medicinesCache) > 0 && time.Since(r.medicinesCacheTime) < r.cacheDuration {
+	if len(r.medicinesCache) > 0 && time.Since(r.medicinesCacheTime) < 5*time.Minute {
 		defer r.medicinesCacheMutex.RUnlock()
 		return r.medicinesCache, nil
 	}
@@ -119,10 +134,28 @@ func (r *hospitalRepo) RestockMedicine(id string, amount int) error {
 // ============ PRESCRIPTION ============
 
 func (r *hospitalRepo) GetAllPrescriptions() ([]models.Prescription, error) {
+	// Check cache first
+	r.prescriptionsCacheMutex.RLock()
+	if len(r.prescriptionsCache) > 0 && time.Since(r.prescriptionsCacheTime) < 2*time.Minute {
+		defer r.prescriptionsCacheMutex.RUnlock()
+		return r.prescriptionsCache, nil
+	}
+	r.prescriptionsCacheMutex.RUnlock()
+
+	// Cache miss, query database
 	var prescriptions []models.Prescription
-	// Use Preload untuk menghindari N+1 query problem
 	err := r.db.Preload("Items").Find(&prescriptions).Error
-	return prescriptions, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Update cache
+	r.prescriptionsCacheMutex.Lock()
+	r.prescriptionsCache = prescriptions
+	r.prescriptionsCacheTime = time.Now()
+	r.prescriptionsCacheMutex.Unlock()
+
+	return prescriptions, nil
 }
 
 func (r *hospitalRepo) GetPrescriptionByID(id string) (*models.Prescription, error) {
@@ -136,39 +169,111 @@ func (r *hospitalRepo) GetPrescriptionByID(id string) (*models.Prescription, err
 }
 
 func (r *hospitalRepo) CreatePrescription(prescription *models.Prescription) error {
-	return r.db.Create(prescription).Error
+	err := r.db.Create(prescription).Error
+	if err == nil {
+		// Invalidate cache
+		r.prescriptionsCacheMutex.Lock()
+		r.prescriptionsCache = nil
+		r.prescriptionsCacheMutex.Unlock()
+	}
+	return err
 }
 
 func (r *hospitalRepo) UpdatePrescriptionStatus(id string, status string) error {
-	return r.db.Model(&models.Prescription{}).Where("id = ?", id).Update("status", status).Error
+	err := r.db.Model(&models.Prescription{}).Where("id = ?", id).Update("status", status).Error
+	if err == nil {
+		// Invalidate cache
+		r.prescriptionsCacheMutex.Lock()
+		r.prescriptionsCache = nil
+		r.prescriptionsCacheMutex.Unlock()
+	}
+	return err
 }
 
 // ============ PATIENT ============
 
 func (r *hospitalRepo) GetAllPatients() ([]models.Patient, error) {
+	// Check cache first
+	r.patientsCacheMutex.RLock()
+	if len(r.patientsCache) > 0 && time.Since(r.patientsCacheTime) < 1*time.Minute {
+		defer r.patientsCacheMutex.RUnlock()
+		return r.patientsCache, nil
+	}
+	r.patientsCacheMutex.RUnlock()
+
+	// Cache miss, query database
 	var patients []models.Patient
 	err := r.db.Find(&patients).Error
-	return patients, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Update cache
+	r.patientsCacheMutex.Lock()
+	r.patientsCache = patients
+	r.patientsCacheTime = time.Now()
+	r.patientsCacheMutex.Unlock()
+
+	return patients, nil
 }
 
 func (r *hospitalRepo) CreatePatient(patient *models.Patient) error {
-	return r.db.Create(patient).Error
+	err := r.db.Create(patient).Error
+	if err == nil {
+		// Invalidate cache
+		r.patientsCacheMutex.Lock()
+		r.patientsCache = nil
+		r.patientsCacheMutex.Unlock()
+	}
+	return err
 }
 
 func (r *hospitalRepo) DeletePatient(id string) error {
-	return r.db.Delete(&models.Patient{}, "id = ?", id).Error
+	err := r.db.Delete(&models.Patient{}, "id = ?", id).Error
+	if err == nil {
+		// Invalidate cache
+		r.patientsCacheMutex.Lock()
+		r.patientsCache = nil
+		r.patientsCacheMutex.Unlock()
+	}
+	return err
 }
 
 // ============ LOG ============
 
 func (r *hospitalRepo) GetAllLogs() ([]models.Log, error) {
+	// Check cache first
+	r.logsCacheMutex.RLock()
+	if len(r.logsCache) > 0 && time.Since(r.logsCacheTime) < 30*time.Second {
+		defer r.logsCacheMutex.RUnlock()
+		return r.logsCache, nil
+	}
+	r.logsCacheMutex.RUnlock()
+
+	// Cache miss, query database
 	var logs []models.Log
-	// Tambah LIMIT dan index pada created_at untuk performance
 	err := r.db.Order("created_at DESC").Limit(100).Find(&logs).Error
-	return logs, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Update cache
+	r.logsCacheMutex.Lock()
+	r.logsCache = logs
+	r.logsCacheTime = time.Now()
+	r.logsCacheMutex.Unlock()
+
+	return logs, nil
 }
 
 func (r *hospitalRepo) CreateLog(log *models.Log) error {
 	log.Date = time.Now().Format("2006-01-02")
-	return r.db.Create(log).Error
+	err := r.db.Create(log).Error
+	if err == nil {
+		// Invalidate cache
+		r.logsCacheMutex.Lock()
+		r.logsCache = nil
+		r.logsCacheMutex.Unlock()
+	}
+	return err
 }
