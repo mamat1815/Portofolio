@@ -55,14 +55,14 @@ type Prescription struct {
 	Date        string             `json:"date"`
 	Status      string             `json:"status"` // Pending, Process, Selesai
 	TotalPrice  int                `json:"total_price"`
-	Items       []PrescriptionItem `gorm:"foreignKey:PrescriptionID" json:"items"`
+	Items       []PrescriptionItem `gorm:"foreignKey:PrescriptionID;references:ID" json:"items"`
 	CreatedAt   time.Time          `json:"created_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
 }
 
 type PrescriptionItem struct {
 	ID             uint   `gorm:"primaryKey" json:"id"`
-	PrescriptionID string `json:"prescription_id"`
+	PrescriptionID string `gorm:"index" json:"prescription_id"` // Add index here
 	MedicineID     string `json:"medicine_id"`
 	Name           string `json:"name"`
 	Qty            int    `json:"qty"`
