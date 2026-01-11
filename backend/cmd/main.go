@@ -31,19 +31,19 @@ func main() {
 		log.Fatal("DATABASE_URL is not set. Check your .env file")
 	}
 
-	// Add parameters to DSN to completely disable statement caching
-	// Check if DSN already has query parameters
+	// Optimize DSN untuk Railway PostgreSQL
+	// Disable prefer_simple_protocol untuk allow prepared statements
 	if strings.Contains(dsn, "?") {
-		dsn += "&prefer_simple_protocol=true"
+		dsn += "&application_name=portofolio_app"
 	} else {
-		dsn += "?sslmode=require&prefer_simple_protocol=true"
+		dsn += "?sslmode=require&application_name=portofolio_app"
 	}
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
     DSN: dsn,
-    PreferSimpleProtocol: true,
+    PreferSimpleProtocol: false, // Enable prepared statements untuk performance
 }), &gorm.Config{
-    PrepareStmt: false,
+    PrepareStmt: true, // Enable prepared statements
     SkipDefaultTransaction: true,
 })
 if err != nil {
@@ -53,9 +53,11 @@ sqlDB, err := db.DB()
 if err != nil {
     log.Fatal("Failed to get database instance: ", err)
 }
-sqlDB.SetMaxOpenConns(10)
-sqlDB.SetMaxIdleConns(2)
-sqlDB.SetConnMaxLifetime(5 * time.Minute)
+// Increase connection pool untuk handle concurrent requests
+sqlDB.SetMaxOpenConns(25)
+sqlDB.SetMaxIdleConns(5)
+sqlDB.SetConnMaxLifetime(10 * time.Minute)
+sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 
 	log.Println("Migrating database...")
 	// Pastikan struct Admin dan Project ada di models
