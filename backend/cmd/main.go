@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	// IMPORT PATH HARUS SESUAI DENGAN go.mod
