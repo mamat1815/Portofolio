@@ -44,6 +44,24 @@ func (s *hospitalService) GetAllMedicines() ([]models.Medicine, error) {
 }
 
 func (s *hospitalService) CreateMedicine(medicine *models.Medicine) error {
+	// Auto-generate ID with prefix OBT- if not provided
+	if medicine.ID == "" {
+		// Try a few times to avoid collision
+		for i := 0; i < 5; i++ {
+			newID := fmt.Sprintf("OBT%04d", rand.Intn(9000)+1000)
+			// Check if ID exists; if not found, use it
+			_, err := s.repo.GetMedicineByID(newID)
+			if err != nil {
+				medicine.ID = newID
+				break
+			}
+		}
+		// Fallback in case all attempts found collision
+		if medicine.ID == "" {
+			medicine.ID = fmt.Sprintf("OBT%d", time.Now().Unix())
+		}
+	}
+
 	return s.repo.CreateMedicine(medicine)
 }
 
