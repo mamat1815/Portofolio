@@ -72,34 +72,18 @@ func (r *hospitalRepo) RestockMedicine(id string, amount int) error {
 
 func (r *hospitalRepo) GetAllPrescriptions() ([]models.Prescription, error) {
 	var prescriptions []models.Prescription
-	// Don't use Preload to avoid prepared statement caching issues in Railway PostgreSQL
-	err := r.db.Find(&prescriptions).Error
-	if err != nil {
-		return prescriptions, err
-	}
-
-	// Manually fetch items for each prescription
-	for i := range prescriptions {
-		var items []models.PrescriptionItem
-		r.db.Where("prescription_id = ?", prescriptions[i].ID).Find(&items)
-		prescriptions[i].Items = items
-	}
-
-	return prescriptions, nil
+	// Use Preload untuk menghindari N+1 query problem
+	err := r.db.Preload("Items").Find(&prescriptions).Error
+	return prescriptions, err
 }
 
 func (r *hospitalRepo) GetPrescriptionByID(id string) (*models.Prescription, error) {
 	var prescription models.Prescription
-	err := r.db.First(&prescription, "id = ?", id).Error
+	// Use Preload untuk fetch items bersamaan
+	err := r.db.Preload("Items").First(&prescription, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
-
-	// Manually fetch items
-	var items []models.PrescriptionItem
-	r.db.Where("prescription_id = ?", id).Find(&items)
-	prescription.Items = items
-
 	return &prescription, nil
 }
 
@@ -131,7 +115,8 @@ func (r *hospitalRepo) DeletePatient(id string) error {
 
 func (r *hospitalRepo) GetAllLogs() ([]models.Log, error) {
 	var logs []models.Log
-	err := r.db.Order("created_at DESC").Find(&logs).Error
+	// Tambah LIMIT dan index pada created_at untuk performance
+	err := r.db.Order("created_at DESC").Limit(100).Find(&logs).Error
 	return logs, err
 }
 

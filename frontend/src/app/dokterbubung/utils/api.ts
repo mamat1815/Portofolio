@@ -7,11 +7,22 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const api = {
     // Medicines
-    getMedicines: async (): Promise<Medicine[]> => {
-        const res = await fetch(`${API_BASE_URL}/hospital/medicines`);
-        if (!res.ok) throw new Error('Failed to fetch medicines');
-        return res.json();
-    },
+// Medicines
+getMedicines: async (): Promise<Medicine[]> => {
+    // Debugging: Log URL yang terbentuk
+    console.log("Mencoba fetch ke URL:", `${API_BASE_URL}/hospital/medicines`);
+
+    const res = await fetch(`${API_BASE_URL}/hospital/medicines`);
+    
+    // Debugging: Cek status errornya
+    if (!res.ok) {
+        console.error("Gagal Fetch! Status Code:", res.status);
+        console.error("Pesan Error dari Server:", await res.text()); // Baca pesan errornya
+        throw new Error(`Gagal ambil obat. Status: ${res.status}`);
+    }
+    
+    return res.json();
+},
 
     createMedicine: async (medicine: Medicine): Promise<Medicine> => {
         const res = await fetch(`${API_BASE_URL}/hospital/medicines`, {

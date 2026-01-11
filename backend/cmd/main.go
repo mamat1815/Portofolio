@@ -71,6 +71,14 @@ sqlDB.SetConnMaxLifetime(5 * time.Minute)
 	)
 	log.Println("Database migrated successfully!")
 
+	// Create indexes untuk performance optimization
+	log.Println("Creating database indexes...")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_prescription_items_prescription_id ON prescription_items(prescription_id)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_logs_created_at ON logs(created_at DESC)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_prescriptions_status ON prescriptions(status)")
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_patients_created_at ON patients(created_at DESC)")
+	log.Println("Indexes created successfully!")
+
 	// Seed initial data for hospital
 	SeedHospitalData(db)
 
