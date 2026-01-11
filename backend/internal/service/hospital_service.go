@@ -184,9 +184,31 @@ func (s *hospitalService) GetAllPatients() ([]models.Patient, error) {
 }
 
 func (s *hospitalService) AddPatient(req *models.AddPatientRequest) (*models.Patient, error) {
-	// Generate patient ID
+	// Generate patient ID with collision checking
+	var patientID string
 	patients, _ := s.repo.GetAllPatients()
-	patientID := fmt.Sprintf("P-%03d", len(patients)+1)
+	
+	// Try sequential numbering first
+	for i := 1; i <= len(patients)+10; i++ {
+		testID := fmt.Sprintf("P-%03d", i)
+		// Check if ID exists
+		found := false
+		for _, p := range patients {
+			if p.ID == testID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			patientID = testID
+			break
+		}
+	}
+	
+	// Fallback if all sequential attempts failed
+	if patientID == "" {
+		patientID = fmt.Sprintf("P-%d", time.Now().Unix()%10000)
+	}
 
 	patient := &models.Patient{
 		ID:        patientID,
