@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/internal/models"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -32,19 +33,45 @@ type HospitalRepository interface {
 }
 
 type hospitalRepo struct {
-	db *gorm.DB
+	db                  *gorm.DB
+	medicinesCache      []models.Medicine
+	medicinesCacheMutex sync.RWMutex
+	medicinesCacheTime  time.Time
+	cacheDuration       time.Duration
 }
 
 func NewHospitalRepo(db *gorm.DB) HospitalRepository {
-	return &hospitalRepo{db: db}
+	return &hospitalRepo{
+		db:            db,
+		cacheDuration: 5 * time.Minute, // Cache medicines untuk 5 menit
+	}
 }
 
 // ============ MEDICINE ============
 
 func (r *hospitalRepo) GetAllMedicines() ([]models.Medicine, error) {
+	// Check cache first
+	r.medicinesCacheMutex.RLock()
+	if len(r.medicinesCache) > 0 && time.Since(r.medicinesCacheTime) < r.cacheDuration {
+		defer r.medicinesCacheMutex.RUnlock()
+		return r.medicinesCache, nil
+	}
+	r.medicinesCacheMutex.RUnlock()
+
+	// Cache miss, query database
 	var medicines []models.Medicine
 	err := r.db.Find(&medicines).Error
-	return medicines, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Update cache
+	r.medicinesCacheMutex.Lock()
+	r.medicinesCache = medicines
+	r.medicinesCacheTime = time.Now()
+	r.medicinesCacheMutex.Unlock()
+
+	return medicines, nil
 }
 
 func (r *hospitalRepo) GetMedicineByID(id string) (*models.Medicine, error) {
@@ -57,15 +84,36 @@ func (r *hospitalRepo) GetMedicineByID(id string) (*models.Medicine, error) {
 }
 
 func (r *hospitalRepo) CreateMedicine(medicine *models.Medicine) error {
-	return r.db.Create(medicine).Error
+	err := r.db.Create(medicine).Error
+	if err == nil {
+		// Invalidate cache
+		r.medicinesCacheMutex.Lock()
+		r.medicinesCache = nil
+		r.medicinesCacheMutex.Unlock()
+	}
+	return err
 }
 
 func (r *hospitalRepo) UpdateMedicine(medicine *models.Medicine) error {
-	return r.db.Save(medicine).Error
+	err := r.db.Save(medicine).Error
+	if err == nil {
+		// Invalidate cache
+		r.medicinesCacheMutex.Lock()
+		r.medicinesCache = nil
+		r.medicinesCacheMutex.Unlock()
+	}
+	return err
 }
 
 func (r *hospitalRepo) RestockMedicine(id string, amount int) error {
-	return r.db.Model(&models.Medicine{}).Where("id = ?", id).Update("stock", gorm.Expr("stock + ?", amount)).Error
+	err := r.db.Model(&models.Medicine{}).Where("id = ?", id).Update("stock", gorm.Expr("stock + ?", amount)).Error
+	if err == nil {
+		// Invalidate cache
+		r.medicinesCacheMutex.Lock()
+		r.medicinesCache = nil
+		r.medicinesCacheMutex.Unlock()
+	}
+	return err
 }
 
 // ============ PRESCRIPTION ============

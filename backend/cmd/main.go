@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	// IMPORT PATH HARUS SESUAI DENGAN go.mod
@@ -31,19 +32,18 @@ func main() {
 		log.Fatal("DATABASE_URL is not set. Check your .env file")
 	}
 
-	// Optimize DSN untuk Railway PostgreSQL
-	// Disable prefer_simple_protocol untuk allow prepared statements
+	// Railway PostgreSQL optimization: disable prepared statements untuk reduce overhead
 	if strings.Contains(dsn, "?") {
-		dsn += "&application_name=portofolio_app"
+		dsn += "&prefer_simple_protocol=true&connect_timeout=5"
 	} else {
-		dsn += "?sslmode=require&application_name=portofolio_app"
+		dsn += "?sslmode=require&prefer_simple_protocol=true&connect_timeout=5"
 	}
 
 	db, err := gorm.Open(postgres.New(postgres.Config{
     DSN: dsn,
-    PreferSimpleProtocol: false, // Enable prepared statements untuk performance
+    PreferSimpleProtocol: true, // Railway works better dengan simple protocol
 }), &gorm.Config{
-    PrepareStmt: true, // Enable prepared statements
+    PrepareStmt: false, // Disable untuk reduce connection overhead
     SkipDefaultTransaction: true,
 })
 if err != nil {
@@ -53,11 +53,11 @@ sqlDB, err := db.DB()
 if err != nil {
     log.Fatal("Failed to get database instance: ", err)
 }
-// Increase connection pool untuk handle concurrent requests
-sqlDB.SetMaxOpenConns(25)
-sqlDB.SetMaxIdleConns(5)
-sqlDB.SetConnMaxLifetime(10 * time.Minute)
-sqlDB.SetConnMaxIdleTime(2 * time.Minute)
+// Optimize untuk Railway's limited connections
+sqlDB.SetMaxOpenConns(5)
+sqlDB.SetMaxIdleConns(3)
+sqlDB.SetConnMaxLifetime(30 * time.Minute) // Keep connections alive longer
+sqlDB.SetConnMaxIdleTime(5 * time.Minute)
 
 	log.Println("Migrating database...")
 	// Pastikan struct Admin dan Project ada di models
